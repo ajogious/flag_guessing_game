@@ -1,4 +1,6 @@
-// 'use strict';
+'use strict';
+
+// here are the DOM elements
 let flagName = document.querySelector('.flag_image');
 let flagNameInput = document.querySelector('.flag_name_input');
 const scoreCount = document.querySelector('.score_count');
@@ -8,118 +10,101 @@ const skipGame = document.querySelector('.skip_game');
 const newGame = document.querySelector('.new_game');
 const imageContainer = document.querySelector('.image');
 
+// global variables
 let score = 0;
 let time = 60;
-
 let timer;
-
-scoreCount.textContent = score;
-timeCount.textContent = time;
-
 let randCountryFlag;
 let randCountryName;
 
+// init
+const initializeGame = function () {
+	score = 0;
+	time = 60;
+	scoreCount.textContent = score;
+	timeCount.textContent = time;
+	flagNameInput.value = '';
+	flagNameInput.disabled = false;
+	flagNameInput.style.color = 'black';
+	skipGame.disabled = false;
+	clearInterval(timer);
+	getRandomFlag();
+	startTimer();
+};
+
+// time function
 const startTimer = function () {
+	clearInterval(timer);
 	timer = setInterval(function () {
 		time--;
 		timeCount.textContent = time;
 
 		if (time < 1) {
-			flagNameInput.disabled = true;
-			clearInterval(timer);
-
-			skipGame.disabled = true;
-
-			flagNameInput.value = 'Game Over';
-			flagNameInput.style.fontWeight = 'bold';
-			flagNameInput.style.color = 'red';
+			endGame();
 		}
 	}, 1000);
 };
 
-const getData = function () {
+// fetching data
+const getRandomFlag = function () {
 	fetch('https://restcountries.com/v3.1/all')
 		.then((response) => response.json())
 		.then((data) => {
 			const random = Math.trunc(Math.random() * data.length);
-			const totalCountry = data.length;
-			totalFlag.textContent = totalCountry;
+			totalFlag.textContent = data.length;
 			randCountryFlag = data[random].flags.png;
 			randCountryName = data[random].name.common.toLowerCase();
 			flagName.src = randCountryFlag;
 			console.log(randCountryName);
-
-			startTimer();
-
-			flagNameInput.addEventListener('input', function () {
-				const inputValue = flagNameInput.value;
-				if (inputValue === randCountryName) {
-					score++;
-					scoreCount.textContent = score;
-
-					const random = Math.trunc(Math.random() * data.length);
-					const totalCountry = data.length;
-					totalFlag.textContent = totalCountry;
-					randCountryFlag = data[random].flags.png;
-					randCountryName = data[random].name.common.toLowerCase();
-					flagName.src = randCountryFlag;
-					console.log(randCountryName);
-
-					flagNameInput.value = '';
-
-					time += 20;
-					if (time < 1) {
-						flagNameInput.disabled = true;
-						clearInterval(timer);
-
-						skipGame.disabled = true;
-
-						flagNameInput.value = 'Game Over';
-						flagNameInput.style.fontWeight = 'bold';
-						flagNameInput.style.color = 'red';
-					}
-				}
-			});
 		})
 		.catch((err) => {
-			imageContainer.textContent = err.getMessage;
+			imageContainer.textContent = `Error: ${err.message}`;
 		});
 };
 
-getData();
+// user input handling
+const handleUserInput = function () {
+	const inputValue = flagNameInput.value.trim().toLowerCase();
+	if (inputValue === randCountryName) {
+		score++;
+		scoreCount.textContent = score;
+		time += 20;
+		getRandomFlag();
+		flagNameInput.value = '';
+		if (time < 1) {
+			endGame();
+		}
+	}
+};
 
-newGame.addEventListener('click', () => {
-	flagNameInput.disabled = false;
-	score = 0;
-	time = 60;
-
-	scoreCount.textContent = score;
-	timeCount.textContent = time;
-
-	clearInterval(timer);
-
-	flagNameInput.value = '';
-
-	flagNameInput.focus();
-
-	getData();
-
-	skipGame.disabled = false;
-
-	flagNameInput.style.color = 'black';
-});
-
-skipGame.addEventListener('click', function () {
-	if (time) {
+// skiping flag
+const skipFlag = function () {
+	if (time > 0) {
 		time -= 10;
 		timeCount.textContent = time;
 		flagNameInput.value = '';
-
-		clearInterval(timer);
-		getData();
-
+		getRandomFlag();
+		flagNameInput.focus();
 		if (time < 1) {
-			skipGame.disabled = true;
+			endGame();
 		}
 	}
-});
+};
+
+// when game over
+const endGame = function () {
+	flagNameInput.disabled = true;
+	clearInterval(timer);
+	skipGame.disabled = true;
+	flagNameInput.value = 'Game Over';
+	flagNameInput.style.fontWeight = 'bold';
+	flagNameInput.style.color = 'red';
+};
+
+// event listener
+flagNameInput.addEventListener('input', handleUserInput);
+newGame.addEventListener('click', initializeGame);
+skipGame.addEventListener('click', skipFlag);
+
+// starting game initially
+initializeGame();
